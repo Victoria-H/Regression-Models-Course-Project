@@ -1,0 +1,255 @@
+Regression Models Course Project (part of the Coursera Data Science specialisation from John Hopkins, Baltimore, taught by Brian Caffo PhD) - Victoria Hunt, August 2014
+
+Analysis of the effect of automatic vs manual transmission on fuel efficiency for motorvehicles using the R data set "mtcars"
+---------------------------------------------------------------------------------------
+
+### Executive Summary / Abstract
+The mtcars data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models). This report explores the relationship between these design aspects and fuel consumption, miles per gallon (mpg) using linear regression models. In particular, the link between automatic and manual transmission and mpg will be be investigated.
+Due to the small size and composition of the data set, statistically significant and quantifiable relationships between transmission and mpg are difficult to establish, nevertheless some insight can be gained into the effect of vehicle construction and fuel consumption.
+
+
+
+### Introduction
+As part of a module on Regression Models, we were asked to use the mtcars data set and R to investigate the effect of automatic vs manual transition on fuel consumption for motor vehicles.The context given in the assignment was as follows:-   
+_You work   for Motor Trend, a magazine about the automobile industry. Looking at a data set of a collection of cars, they are interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:_
+
+* _"Is an automatic or manual transmission better for MPG?"_
+* _"Quantify the MPG difference between automatic and manual transmissions"_
+
+
+The objective was therefore to use linear regression to investigate the above questions. Limitations of the data set (representitavness, sample size) should be noted.
+
+
+To access the data set in R type  `mtcars` and consult  `help(mtcars)` for more information and the list of variables.
+
+
+
+### Method
+The general method employed in this report is as follows
+
+
+* Exploratory data analysis - Overview of the data, identification of the main factors which influence mpg
+
+* Choice of model - A parsimonius model with easily interpretable coefficients
+
+* Diagnostics - Residual analysis and identification of any observations that have large infuence on the model chosen.
+
+* R  - All analysis is done using R and this dynamic Rmd document available here contains  reproducible code. knitR package used to convert to html.
+
+### Results
+
+The dataset comprises observations on 32 vehicles, 19 of which have automatic transmission.
+
+
+```{r SUMMARY, echo=FALSE, comment=NA}
+sumdata<-data.frame("n"=c(19,13),"mean mpg"=c(mean(mtcars$mpg[mtcars$am==0]),mean(mtcars$mpg[mtcars$am==1])))
+rownames(sumdata)<-c("automatic","manual")
+sumdata
+```
+In this data set, the manual cars have a higher mpg on average than the automatic cars however this does not in any way imply a causal relationship as other aspects affecting mpg must be taken into account.
+
+Fig1 shows the relationship between mpg and all 10 aspects. Below each graph is the coefficient of determination obtained when regressing mpg with the variable alone. It enables us to have a preliminary idea of which variables have most impact on mpg. R^2 indicates the change in mpg that is explained by that variable.  
+
+```{r RSQUARED, echo=FALSE, results='hide'}
+##converts variable to factors
+mtcars$am<-as.factor(mtcars$am)
+mtcars$gear<-as.factor(mtcars$gear)
+mtcars$carb<-as.factor(mtcars$carb)
+mtcars$vs<-as.factor(mtcars$vs)
+mtcars$cyl<-as.factor(mtcars$cyl)
+##generates rsquared for all graphs
+rsquared<-c()
+for(i in 2:11 ) {
+        rsquared<-c(rsquared,summary(lm(mpg~mtcars[,i],mtcars))$r.squared)
+
+  }      
+``` 
+
+```{r PAIRPLOTS, fig.width=14, fig.height=6, echo=FALSE, results='hide',fig.show='hide'}
+##generates plots
+par(mfrow=c(2,5))
+for(i in 1:10){
+        plot(mtcars[,i+1],mtcars$mpg,ylab="mpg",xlab=names(mtcars[i+1]),sub=paste("R squared =",rsquared[i]))
+}
+```
+
+
+We can see that the potential variables of interest are weight, number of cylinders, displacement, and gross horse power.  
+
+Fig2 : Running an exploratory linear regression of mpg against these variables + transmission we can see by looking at the p values ascociated with the coefficients that this model indicates weight and horse power are significantly explanatory of mpg. Although this model yields a high R^2 it should be simplified to ease interpretation and avoid variance inflation. It is already clear that the effect of transmission on mpg is not ovbious from this dataset, but as we are particularly interested in this variable we must continue to consider it in our model. 
+
+```{r REGALL, echo=FALSE,results='hide'}
+summary(lm(mpg~am+wt+hp+cyl+disp,mtcars))
+```
+
+Fig3 : Looking a a series of nested regression models the ANOVA output table1 indicates that regressing mpg angainst both weight and horsepower is valid. The addition  of transmission (am) does not significantly improve the model. Nor does the inclusion of displacement and number of cylinders.
+
+```{r ANOVA, echo=FALSE,results='hide'}
+print("table1",quote=FALSE,row.names=FALSE)
+reg1<-lm(mpg~wt,mtcars)
+reg2<-lm(mpg~wt+hp,mtcars)
+reg3<-lm(mpg~wt+hp+am,mtcars)
+reg4<-lm(mpg~wt+hp+am+cyl,mtcars)
+reg5<-lm(mpg~wt+hp+am+cyl+disp,mtcars)
+anova(reg1,reg2,reg3,reg4,reg5)
+
+print("table2", quote=FALSE)
+reg6<-lm(mpg~am,mtcars)
+reg7<-lm(mpg~am+wt,mtcars)
+reg8<-lm(mpg~am+wt+hp,mtcars)
+anova(reg6,reg7,reg8)
+
+```
+
+However our principal concern is the effect of transmission. The second ANOVA table2 fig.3 confirms that we should also include weight and horsepower as regressors if we include transmission.
+
+__Hence the model mpg~weight+horse power+transmission(am)  was chosen with output...__
+
+fig4 - CHOSEN MODEL
+
+```{r MODEL,echo=FALSE,comment=NA}
+##chosen model
+summary(reg8)
+```
+
+__Interpretation of coefficients__    
+Intercept : Not usefully interpretable estimated average mpg for automatic  vehicle zero weight and hp    
+am1 : The expected difference in mpg (increase here) if a car of certain weight and horse power had manual transmission rather than automatic.     
+wt :The expected change in mpg per 1000lb increase in weight (all other variables fixed)       
+hp :The expected change in mpg per unit increase in horse power (all other variables fixed)   
+associated p=Pr(>|t|) : The probability that the coefficient is not null. i.e. no correlation effect observed.        
+R^2 : =0.84 The fraction of variability of mpg that is explained by this model.      
+
+We conclude at 95% significance that both weight and horse power decrease mpg.   
+
+__Focussing on automatic vs manual transmission__  
+The model indicates that manual transmission increases mpg. However testing at 95% significance.   
+H0: transmission has no effect am1=0 (when we adjust for weight and horsepower)      
+H1: transmission has an effect on mpg mod(am1)>0      
+p>0.05 so we cannot reject the null hypthesis and conclude there is not sufficient evidence (at95%) in this dataset to support the idea that transmission has an effect on mpg.   
+
+Attempting to quantify this effect further is therefore not very useful.
+
+__Diagnostics__
+
+To investigate the validity of this model in more detail, a simple residual analysis was conducted.
+
+Fig5 shows the residual plots of weight, horse power and transmission when used as indivdual regressors, together with the residual plot of the combined model.
+
+
+
+
+```{r RESIDPLOT, fig.width=10, fig.height=8, echo=FALSE,fig.show='hide'}
+par(mfrow=c(2,2))
+plot(reg1,which=1)
+title(sub="lm(mpg~wt,mtcars)")
+plot(lm(mpg~hp,mtcars),which=1)
+title(sub="lm(mpg~hp,mtcars)")
+plot(reg6,which=1)
+title(sub="lm(mpg~am,mtcars)")
+plot(reg3,which=1)
+title(sub="COMBINED lm(mpg~wt+hp+am,mtcars)")
+```
+
+Fig6 is a table of influence measures for each observation.   
+rstandard is the standardised residual of the observation   
+hatvalues measures leverage      
+dfbetas (dfb) gives the expected change in the respective model coefficients if that data point was excluded.   
+```{r INFLUENCE,echo=FALSE,results='hide'}
+options(width=150)
+influence1<-data.frame(rstandard(reg3))
+influence2<-data.frame(hatvalues(reg3))
+influence3<-data.frame(dfbetas(reg3))
+influence<-cbind(influence1,influence2,influence3)
+influence<-influence[order(influence[,2],decreasing=TRUE),]
+colnames(influence)<-c("rstandard","hatvalues","dfb intercept","dfb wt ","dfb hp","dfb am")
+influence
+```
+
+Several vehicles appear to have more than average influence on our model.
+I will not omit these vehicles from the analysis as there is no reason to believe that these observations are spurious and we have no information as to whether these observations form part of a representative sample of vehicles. Indeed we have no information as to the representativeness of the sample in general.
+
+However it may be worth investigating the robustness of our model against outliers by running the same analysis excluding these outlying cases.
+
+
+Fig7 : Running the  regression model excluding (rather arbitrarily) the observations with the 3 highest hat values then secondly the observations with the 3 highest standardised residuals (mod).
+
+```{r REGRED, comment=NA,echo=FALSE,results='hide'}
+## reduced regression model output
+
+summary(lm(mpg~am+wt+hp,mtcars[-c(15,16,31),]))
+summary(lm(mpg~am+wt+hp,mtcars[-c(17,18,20),]))
+##colnames(regRED)<-c("top3 hatvalues"," top3 rstandard")
+
+```
+
+
+With these models weight and horse power remain significant with little change in the coefficients. The manual transmission coefficient (am1) is significantly changed when the highest residuals are omitted (indicating sensitivity of the results to outliers) and, as when using the complete data set, any change due to transmission is not significant. 
+
+
+
+### Discussion and Conclusion
+While the data set does not allow us to conclude a relationship between automatic/manual transmission and mpg, the effect of both vehicle weight and horsepower is significant. 
+The data set was not particularly well adapted to answer our key question. Firstly the number of observations is small and secondly I see no evidence that this data set was compiled in order to answer our question. We have significantly more automatic cars in our data and the data set does not allow comaprison between the same (or similar) model of car with manual transmission and without manual transmission. In addition we do not know how representative a sample this is.
+ 
+
+#### References
+
+ R Core Team (2014). R: A language and environment for statistical computing. R Foundation for Statistical
+  Computing, Vienna, Austria. URL http://www.R-project.org/.
+  
+________________________
+  
+Appendix of figures (tables and plots)
+-------
+VARIABLE KEY mpg -Miles/(US) gallon	 cyl-Number of cylinders	 disp-Displacement (cu.in.)	 hp-Gross horsepower	 drat-Rear axle ratio	 wt-Weight (lb/1000)	 qsec-1/4 mile time	 vs-V/S	 am-Transmission (0 = automatic, 1 = manual)	 gear-Number of forward gears	 carb-Number of carburetors
+
+       
+            
+fig1 : PLOTS OF mpg AGAINST THE 10 ASPECTS
+
+
+
+
+```{r, ref.label='PAIRPLOTS',results='asis',fig.width=14, fig.height=6, echo=FALSE}
+
+```
+
+.                   
+fig2 - EXPLORATORY REGRESSION (mpg ~ am + wt + hp + cyl + disp)
+
+```{r, ref.label='REGALL',results='markup',comment=NA,echo=FALSE}
+
+```
+.  
+fig3 - ANOVA TABLES FOR 2 SERIES OF NESTED MODELS
+
+```{r, ref.label='ANOVA',results='markup',comment=NA, echo=FALSE}
+
+```
+
+
+.  
+fig5 - RESIDUAL ANALYSIS 
+
+```{r, ref.label='RESIDPLOT',results='markup',comment=NA,echo=FALSE}
+
+```
+
+.   
+fig6 - TABLE OF INFLUENCE MEASURES
+```{r,set-options, ref.label='INFLUENCE',results='markup',comment=NA,echo=FALSE}
+options(width=150)
+
+```
+
+.   
+fig7 - REGRESSION MODEL WITH REDUCED DATA SET (table1 excluding top 3 hat values, table2 excluding top 3 standardised residuals)
+```{r, ref.label='REGRED',results='markup',comment=NA,echo=FALSE}
+
+```
+
+
+
+
+
