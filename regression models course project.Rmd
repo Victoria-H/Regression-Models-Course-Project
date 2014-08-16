@@ -34,7 +34,7 @@ The general method employed in this report is as follows
 
 * Diagnostics - Residual analysis and identification of any observations that have large infuence on the model chosen.
 
-* R  - All analysis is done using R and this dynamic Rmd document available here contains  reproducible code. knitR package used to convert to html.
+* R  - All analysis is done using R and this dynamic Rmd document available https://github.com/Victoria-H/Regression-Models-Course-Project/edit/master/regression%20models%20course%20project.Rmd contains  reproducible code. knitR package used to convert to html.
 
 ### Results
 
@@ -203,7 +203,7 @@ ________________________
 Appendix of figures (tables and plots)
 -------
 VARIABLE KEY mpg -Miles/(US) gallon	 cyl-Number of cylinders	 disp-Displacement (cu.in.)	 hp-Gross horsepower	 drat-Rear axle ratio	 wt-Weight (lb/1000)	 qsec-1/4 mile time	 vs-V/S	 am-Transmission (0 = automatic, 1 = manual)	 gear-Number of forward gears	 carb-Number of carburetors
-
+NOTE : am, cyl, vs, carb, gear converted to factor variables
        
             
 fig1 : PLOTS OF mpg AGAINST THE 10 ASPECTS
